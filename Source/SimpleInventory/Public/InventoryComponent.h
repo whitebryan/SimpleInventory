@@ -29,6 +29,8 @@ protected:
 	int inventoryRows = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", ClampMax = "5", UMin = "1", UMax = "5", ToolTip = "The Max number of rows that can be added to this inventory."))
 	int maxInventoryRows = 5;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", UMin = "1", ToolTip = "The number of slots per row."))
+	int slotsPerRow = 5;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "2000", UMin = "0", UMax = "2000", ToolTip = "The range to add to a lootbag instead of creating a new one."))
 	float mergeDist = 500;

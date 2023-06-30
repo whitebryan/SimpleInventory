@@ -34,7 +34,7 @@ void UInventoryComponent::BeginPlay()
 //Adds another row of empty slots to the inventory
 bool UInventoryComponent::addNewRows(int numRows, bool ignoreUpgradeItem)
 {
-	if (inventoryArray.Num() / 5 == maxInventoryRows)
+	if (inventoryArray.Num() / slotsPerRow == maxInventoryRows)
 	{
 		return false;
 	}
@@ -52,9 +52,9 @@ bool UInventoryComponent::addNewRows(int numRows, bool ignoreUpgradeItem)
 		}
 	}
 
-	for (int i = 0; i < (numRows * 6); ++i)
+	for (int i = 0; i < (numRows * slotsPerRow); ++i)
 	{
-		if (inventoryArray.Num() / 6 == maxInventoryRows)
+		if (inventoryArray.Num() / slotsPerRow == maxInventoryRows)
 		{
 			break;
 		}
@@ -545,7 +545,7 @@ bool UInventoryComponent::isEmpty()
 
 int UInventoryComponent::getRows()
 {
-	return inventoryArray.Num() / 5;
+	return inventoryArray.Num() / slotsPerRow;
 }
 
 void UInventoryComponent::loadInventory(TArray<FInvItem> newInv)
