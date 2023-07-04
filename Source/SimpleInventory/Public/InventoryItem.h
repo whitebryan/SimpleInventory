@@ -41,7 +41,7 @@ class SIMPLEINVENTORY_API UItemAsset : public UDataAsset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FName uniqueID = "-1";
+	int uniqueID = -1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FName name = "Empty";
@@ -54,6 +54,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UTexture2D* icon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int maxStackSize = 99;
 };
 
 

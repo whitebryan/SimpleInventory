@@ -25,9 +25,9 @@ protected:
 	virtual void BeginPlay() override;
 
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", ClampMax = "5", UMin = "1", UMax = "5", ToolTip = "The number of rows to put in this inventory, rows are 5 columns each."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", UMin = "1", ToolTip = "The number of rows to put in this inventory, rows are 5 columns each."))
 	int inventoryRows = 1;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", ClampMax = "5", UMin = "1", UMax = "5", ToolTip = "The Max number of rows that can be added to this inventory."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", UMin = "1", ToolTip = "The Max number of rows that can be added to this inventory."))
 	int maxInventoryRows = 5;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", UMin = "1", ToolTip = "The number of slots per row."))
 	int slotsPerRow = 5;
@@ -41,6 +41,8 @@ protected:
 	UItemAsset* upgradeItem = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "Amount of the upgrade item needed"))
 	int amtToUpgrade = 1;
+
+	UItemAsset* findItemAssetByID(int uniqueID);
 
 public:	
 	UPROPERTY(BlueprintAssignable, Category = "Delegates")
@@ -71,7 +73,7 @@ public:
 	bool moveToNewInvComp(int slot, UInventoryComponent* newComp);
 
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get the amount of an item in this inventory"))
-	int getItemQuantity(const FName itemID);
+	int getItemQuantity(int uniqueID);
 
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Find the item in a specific spot"))
 	FInvItem getItemAtSlot(int slot);
@@ -83,7 +85,7 @@ public:
 	int findNextItemOfType(int startPos, int direction, const FName itemType);
 
 	UFUNCTION()
-	int changeQuantity(const FName itemID, int quantityToChange);
+	int changeQuantity(int uniqueID, int quantityToChange);
 
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Split a stack into multiple slots"))
 	bool splitStack(int slot, int newStackSize);
@@ -102,4 +104,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Load inventory from array"))
 	void loadInventory(TArray<FInvItem> newInv);
+
+	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get amount of upgrade item needed to upgrage"))
+	int getAmtToUpgrade() { return amtToUpgrade; }
+
+	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get lootbag class"))
+	TSubclassOf<class AActor> getLootBagClass() { return lootBag; } 
 };

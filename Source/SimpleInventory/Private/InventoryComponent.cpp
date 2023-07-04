@@ -12,9 +12,10 @@ UInventoryComponent::UInventoryComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 	inventoryArray = TArray<FInvItem>();
 
+	/*Put a reference to a backup upgrade item here
 	if (upgradeItem == nullptr)
 	{
-		FSoftObjectPath itemAssetPath("/Game/Blueprints/Interactables/Harvestables/HarvestableDataAssets/Stone/SmallIronChuns.SmallIronChuns");
+		FSoftObjectPath itemAssetPath("REFERNCE TO BACKUP UPGRADE ITEM");
 		UObject* itemObject = itemAssetPath.TryLoad();
 		UItemAsset* itemAsset = Cast<UItemAsset>(itemObject);
 		if (IsValid(itemAsset))
@@ -22,6 +23,7 @@ UInventoryComponent::UInventoryComponent()
 			upgradeItem = itemAsset;
 		}
 	}
+	*/
 }
 
 // Called when the game starts
@@ -38,7 +40,7 @@ bool UInventoryComponent::addNewRows(int numRows, bool ignoreUpgradeItem)
 	{
 		return false;
 	}
-	else if (!ignoreUpgradeItem)
+	else if (!ignoreUpgradeItem && IsValid(upgradeItem))
 	{
 		int itemAmt = getItemQuantity(upgradeItem->uniqueID);
 	
@@ -95,7 +97,7 @@ FAddItemStatus UInventoryComponent::addNewItem(const FInvItem& newItem, bool dro
 		statusReturn.leftOvers = 0;
 		return statusReturn;
 	}
-	else if (quant == 0 || quant%99 == 0)
+	else if (quant == 0 || quant % newItem.item->maxStackSize == 0)
 	{
 		//Put it in the first empty position
 		for (int i = 0; i < inventoryArray.Num(); ++i)
@@ -109,15 +111,16 @@ FAddItemStatus UInventoryComponent::addNewItem(const FInvItem& newItem, bool dro
 				statusReturn.leftOvers = 0;
 				return statusReturn;
 			}
-		}
+			else if (i == inventoryArray.Num() - 1)
+			{
+				//No room in inventory so create a lootbag if it was request thend return as failed
+				statusReturn.addStatus = false;
 
-
-		//No room in inventory so create a lootbag if it was request thend return as failed
-		statusReturn.addStatus = false;
-
-		if (dropIfFull)
-		{
-			createLootBag(newItem);
+				if (dropIfFull)
+				{
+					createLootBag(newItem);
+				}
+			}
 		}
 
 		return statusReturn;
@@ -158,13 +161,21 @@ FAddItemStatus UInventoryComponent::addNewItem(const FInvItem& newItem, bool dro
 //Assume its only called for empty slots, currently only used from drag and drop UI
 void UInventoryComponent::addItemAtSlot(const FInvItem& newItem, int slot)
 {
-	inventoryArray[slot] = newItem;
-	OnInvChanged.Broadcast();
+	if (slot < inventoryArray.Num())
+	{
+		inventoryArray[slot] = newItem;
+		OnInvChanged.Broadcast();
+	}
 }
 
 
 void UInventoryComponent::moveItem(int from, int to)
 {
+	if ((from < 0 || from >= inventoryArray.Num()) || (to < 0 || to > inventoryArray.Num()))
+	{
+		return;
+	}
+
 	FInvItem prevItem = inventoryArray[to];
 	UItemAsset* prevItemAsset = prevItem.item;
 
@@ -179,15 +190,15 @@ void UInventoryComponent::moveItem(int from, int to)
 	else if (IsValid(prevItemAsset) && prevItemAsset->uniqueID == toItemAsset->uniqueID)
 	{
 		//If combined they are a full stack or less combine into one stack, otherwise move a quantity
-		if (prevItem.quantity + inventoryArray[from].quantity <= 99)
+		if (prevItem.quantity + inventoryArray[from].quantity <= prevItemAsset->maxStackSize)
 		{
 			inventoryArray[to].quantity += inventoryArray[from].quantity;
 			removeItem(from);
 		}
 		else
 		{
-			int amountToLeave = (prevItem.quantity + inventoryArray[from].quantity ) - 99;
-			inventoryArray[to].quantity = 99;
+			int amountToLeave = (prevItem.quantity + inventoryArray[from].quantity ) - prevItemAsset->maxStackSize;
+			inventoryArray[to].quantity = prevItemAsset->maxStackSize;
 			inventoryArray[from].quantity = amountToLeave;
 		}
 	}
@@ -220,7 +231,7 @@ void UInventoryComponent::removeItem(int slot, bool bShouldDrop)
 	OnInvChanged.Broadcast();
 }
 
-int UInventoryComponent::getItemQuantity(const FName itemType)
+int UInventoryComponent::getItemQuantity(int uniqueID)
 {
 	int curAmt = 0;
 	for(int i = 0; i < inventoryArray.Num(); ++i)
@@ -229,11 +240,11 @@ int UInventoryComponent::getItemQuantity(const FName itemType)
 
 		if (IsValid(curItemAsset))
 		{
-			if (itemType == "Empty" && curItemAsset == nullptr)
+			if (uniqueID == -1 && curItemAsset == nullptr)
 			{
 				curAmt += 1;
 			}
-			else if (curItemAsset->uniqueID == itemType)
+			else if (curItemAsset->uniqueID == uniqueID)
 			{
 				curAmt += inventoryArray[i].quantity;
 			}
@@ -314,15 +325,30 @@ bool UInventoryComponent::itemTypeExists(const FName typeToSearchFor)
 	return false;
 }
 
-//Cannot add or remove MORE than 99 at one time
+UItemAsset* UInventoryComponent::findItemAssetByID(int uniqueID)
+{
+	for (FInvItem curItem : inventoryArray)
+	{
+		if (IsValid(curItem.item) && curItem.item->uniqueID == uniqueID)
+		{
+			return curItem.item;
+		}
+	}
+
+	return nullptr;
+}
+
+//Cannot add or remove MORE than max stack at one time
 //When removing assume this is ONLY called if there is enough to remove
 //When adding there can be leftovers to create new stack
 //Returns leftovers in the case of a full inventory 
 //Return -1 means there is no item of this type in inventory
-//Return -2 means you tried to change more than 99 at one time
-int UInventoryComponent::changeQuantity(const FName itemID, int quantityToChange)
+//Return -2 means you tried to change more than max stack at one time
+int UInventoryComponent::changeQuantity(int uniqueID, int quantityToChange)
 {
-	if(quantityToChange > 99)
+	UItemAsset* itemToChange = findItemAssetByID(uniqueID);
+
+	if(!IsValid(itemToChange) || quantityToChange > itemToChange->maxStackSize)
 		return -2;
 	
 	//Checks for existing stacks to edit first
@@ -332,7 +358,7 @@ int UInventoryComponent::changeQuantity(const FName itemID, int quantityToChange
 	{
 		UItemAsset* curItem = inventoryArray[i].item;
 
-		if (IsValid(curItem) && curItem->uniqueID == itemID)
+		if (IsValid(curItem) && curItem->uniqueID == uniqueID)
 		{
 			int curAmt = inventoryArray[i].quantity;
 
@@ -350,10 +376,10 @@ int UInventoryComponent::changeQuantity(const FName itemID, int quantityToChange
 				i = 0;
 				return 0;
 			}
-			else if(curAmt + amountLeftToChange > 99 && curAmt != 99)
+			else if(curAmt + amountLeftToChange > itemToChange->maxStackSize && curAmt != itemToChange->maxStackSize)
 			{
-				amountLeftToChange = amountLeftToChange - (99 - inventoryArray[i].quantity);
-				inventoryArray[i].quantity = 99;
+				amountLeftToChange = amountLeftToChange - (itemToChange->maxStackSize - inventoryArray[i].quantity);
+				inventoryArray[i].quantity = itemToChange->maxStackSize;
 				OnInvChanged.Broadcast();
 			}
 			else if (UKismetMathLibrary::SignOfInteger(amountLeftToChange) < 0)
@@ -362,7 +388,7 @@ int UInventoryComponent::changeQuantity(const FName itemID, int quantityToChange
 				OnInvChanged.Broadcast();
 				return 0;
 			}
-			else if(inventoryArray[i].quantity != 99)
+			else if(inventoryArray[i].quantity != itemToChange->maxStackSize)
 			{
 				inventoryArray[i].quantity += amountLeftToChange;
 				OnInvChanged.Broadcast();
@@ -385,7 +411,7 @@ int UInventoryComponent::changeQuantity(const FName itemID, int quantityToChange
 			{
 				emptySlot = i;
 			}
-			else if (IsValid(curItem) && curItem->uniqueID == itemID)
+			else if (IsValid(curItem) && curItem->uniqueID == uniqueID)
 			{
 				tempCopy = inventoryArray[i];
 			}
@@ -495,16 +521,20 @@ void UInventoryComponent::createLootBag(const FInvItem& itemToDrop, int slot)
 			for (int i = 0; i < lootBags.Num(); ++i)
 			{
 				UInventoryComponent* curInv = Cast<UInventoryComponent>(lootBags[i]->GetComponentByClass(UInventoryComponent::StaticClass()));
-				FAddItemStatus newStatus = curInv->addNewItem(item, false, false);
 
-				if (newStatus.leftOvers == 0)
+				if (IsValid(curInv))
 				{
-					removeItem(slot);
-					return;
-				}
-				else
-				{
-					item.quantity = newStatus.leftOvers;
+					FAddItemStatus newStatus = curInv->addNewItem(item, false, false);
+
+					if (newStatus.leftOvers == 0)
+					{
+						removeItem(slot);
+						return;
+					}
+					else
+					{
+						item.quantity = newStatus.leftOvers;
+					}
 				}
 			}
 		}
@@ -515,17 +545,20 @@ void UInventoryComponent::createLootBag(const FInvItem& itemToDrop, int slot)
 	AActor* newLootBag = GetWorld()->SpawnActor<AActor>(lootBag, spawnLoc, GetOwner()->GetActorRotation());
 
 	UInventoryComponent* newInvComp = Cast<UInventoryComponent>(newLootBag->GetComponentByClass(UInventoryComponent::StaticClass()));
-	FAddItemStatus tryDrop = Cast<UInventoryComponent>(newInvComp)->addNewItem(item);
 
-	if (tryDrop.addStatus && slot >= 0 && slot < inventoryArray.Num())
+	if (IsValid(newInvComp))
 	{
-		removeItem(slot);
-	}
-	else if (!tryDrop.addStatus)
-	{
-		newLootBag->Destroy();
-	}
+		FAddItemStatus tryDrop = Cast<UInventoryComponent>(newInvComp)->addNewItem(item);
 
+		if (tryDrop.addStatus && slot >= 0 && slot < inventoryArray.Num())
+		{
+			removeItem(slot);
+		}
+		else if (!tryDrop.addStatus)
+		{
+			newLootBag->Destroy();
+		}
+	}
 }
 
 
