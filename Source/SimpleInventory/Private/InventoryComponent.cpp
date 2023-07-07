@@ -193,7 +193,7 @@ void UInventoryComponent::moveItem(int from, int to)
 		if (prevItem.quantity + inventoryArray[from].quantity <= prevItemAsset->maxStackSize)
 		{
 			inventoryArray[to].quantity += inventoryArray[from].quantity;
-			removeItem(from);
+			removeItem(from, false);
 		}
 		else
 		{
@@ -364,14 +364,14 @@ int UInventoryComponent::changeQuantity(int uniqueID, int quantityToChange)
 
 			if (curAmt + amountLeftToChange == 0)
 			{
-				removeItem(i);
+				removeItem(i, false);
 				OnInvChanged.Broadcast();
 				return 0;
 			}
 			else if (curAmt + amountLeftToChange <= 0)
 			{
 				amountLeftToChange = amountLeftToChange - inventoryArray[i].quantity;
-				removeItem(i);
+				removeItem(i, false);
 				OnInvChanged.Broadcast();
 				i = 0;
 				return 0;
@@ -482,7 +482,7 @@ bool UInventoryComponent::moveToNewInvComp(int slot, UInventoryComponent* newCom
 	}
 	else
 	{
-		removeItem(slot);
+		removeItem(slot, false);
 		OnInvChanged.Broadcast();
 		return true;
 	}
@@ -528,7 +528,7 @@ void UInventoryComponent::createLootBag(const FInvItem& itemToDrop, int slot)
 
 					if (newStatus.leftOvers == 0)
 					{
-						removeItem(slot);
+						removeItem(slot, false);
 						return;
 					}
 					else
@@ -552,7 +552,7 @@ void UInventoryComponent::createLootBag(const FInvItem& itemToDrop, int slot)
 
 		if (tryDrop.addStatus && slot >= 0 && slot < inventoryArray.Num())
 		{
-			removeItem(slot);
+			removeItem(slot, false);
 		}
 		else if (!tryDrop.addStatus)
 		{
