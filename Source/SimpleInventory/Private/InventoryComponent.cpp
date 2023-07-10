@@ -240,14 +240,14 @@ int UInventoryComponent::getItemQuantity(int uniqueID)
 
 		if (IsValid(curItemAsset))
 		{
-			if (uniqueID == -1 && curItemAsset == nullptr)
-			{
-				curAmt += 1;
-			}
-			else if (curItemAsset->uniqueID == uniqueID)
+			if (curItemAsset->uniqueID == uniqueID)
 			{
 				curAmt += inventoryArray[i].quantity;
 			}
+		}
+		else if (uniqueID == -1)
+		{
+			curAmt += 1;
 		}
 	}
 	return curAmt;

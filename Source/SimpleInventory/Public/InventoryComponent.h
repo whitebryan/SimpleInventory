@@ -110,4 +110,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get lootbag class"))
 	TSubclassOf<class AActor> getLootBagClass() { return lootBag; } 
+
+	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get free slots in bag"))
+	int getAmountOfEmptySlots() { return getItemQuantity(-1); }
 };
