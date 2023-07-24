@@ -348,7 +348,7 @@ int UInventoryComponent::changeQuantity(int uniqueID, int quantityToChange)
 {
 	UItemAsset* itemToChange = findItemAssetByID(uniqueID);
 
-	if(!IsValid(itemToChange) || quantityToChange > itemToChange->maxStackSize)
+	if(!IsValid(itemToChange) || FMath::Abs(quantityToChange) > itemToChange->maxStackSize)
 		return -2;
 	
 	//Checks for existing stacks to edit first
@@ -376,7 +376,7 @@ int UInventoryComponent::changeQuantity(int uniqueID, int quantityToChange)
 				i = 0;
 				return 0;
 			}
-			else if(curAmt + amountLeftToChange > itemToChange->maxStackSize && curAmt != itemToChange->maxStackSize)
+			else if(UKismetMathLibrary::SignOfInteger(amountLeftToChange) > 0 && curAmt + amountLeftToChange > itemToChange->maxStackSize && curAmt != itemToChange->maxStackSize)
 			{
 				amountLeftToChange = amountLeftToChange - (itemToChange->maxStackSize - inventoryArray[i].quantity);
 				inventoryArray[i].quantity = itemToChange->maxStackSize;
