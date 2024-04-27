@@ -41,7 +41,7 @@ class SIMPLEINVENTORY_API UItemAsset : public UDataAsset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int uniqueID = -1;
+	int uniqueID = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FName name = "Empty";
@@ -57,6 +57,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int maxStackSize = 99;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int buyPrice = 10;
 };
 
 
@@ -72,6 +75,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "99", UIMin = "0", UIMax = "99"))
 	int32 quantity;
 
+
 	FInvItem()
 	{
 		item = nullptr;
@@ -81,8 +85,20 @@ public:
 	bool operator==(const FInvItem& other) const 
 	{
 
-		if (item->uniqueID == other.item->uniqueID) { return true; }
+		if (IsValid(item) && IsValid(other.item)) { return item->uniqueID == other.item->uniqueID; }
 		else { return false; }
+	}
+
+	bool operator!=(const FInvItem& other) const
+	{
+		if (IsValid(item) && IsValid(other.item))
+		{
+			return !(item->uniqueID == other.item->uniqueID);
+		}
+		else
+		{
+			return false;
+		}
 	}
 };
 //

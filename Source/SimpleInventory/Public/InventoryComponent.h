@@ -113,4 +113,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get free slots in bag"))
 	int getAmountOfEmptySlots() { return getItemQuantity(-1); }
+
+	UFUNCTION(BlueprintCallable, meta = (ToolTip = "Get slots per row"))
+	int getSlotsPerRow() { return slotsPerRow; }
 };
